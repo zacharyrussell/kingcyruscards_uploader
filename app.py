@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 import threading
 import time
 from qr_window import show_qr_code
+from update_checker import check_for_updates, prompt_update
 
 app = Flask(__name__)
 
@@ -32,6 +33,43 @@ def get_local_ip():
     except Exception:
         return "127.0.0.1"
 
+def show_qr_code(url):
+    """Display QR code in a tkinter window"""
+    # Generate QR code
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    
+    # Create tkinter window
+    root = tk.Tk()
+    root.title("Scan QR Code with Your Phone")
+    
+    # macOS specific fixes to bring window to front
+    root.lift()
+    root.attributes('-topmost', True)
+    root.after_idle(root.attributes, '-topmost', False)
+    
+    # Convert PIL image to tkinter format
+    photo = ImageTk.PhotoImage(img)
+    
+    # Create label with QR code
+    label = tk.Label(root, image=photo)
+    label.pack(padx=20, pady=20)
+    
+    # Add text with URL
+    url_label = tk.Label(root, text=f"Or visit: {url}", font=("Arial", 12))
+    url_label.pack(pady=10)
+    
+    # Add instruction
+    instruction = tk.Label(root, text="Scan this QR code with your phone to access the app", 
+                          font=("Arial", 10), fg="gray")
+    instruction.pack(pady=5)
+    
+    # Force focus on macOS
+    root.focus_force()
+    
+    root.mainloop()
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -93,6 +131,14 @@ def run_flask():
     app.run(debug=False, host='0.0.0.0', port=5000, use_reloader=False)
 
 if __name__ == '__main__':
+    # Check for updates on startup
+    print("\n🔍 Checking for updates...")
+    update_info = check_for_updates()
+    if update_info and update_info.get('available'):
+        prompt_update(update_info)
+    else:
+        print("✅ You're running the latest version!\n")
+    
     # Get local IP address
     local_ip = get_local_ip()
     port = 5000
@@ -102,12 +148,12 @@ if __name__ == '__main__':
     print(f"🚀 Server starting at: {url}")
     print(f"{'='*50}\n")
     
-    # Run Flask in a background thread (tkinter must be on main thread on macOS)
+    # Run Flask in a background thread
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
     
     # Give Flask a moment to start
     time.sleep(1)
     
-    # Show QR code on main thread
+    # Show QR code window on main thread
     show_qr_code(url)
