@@ -34,7 +34,7 @@ jobs:
           path: dist/KingCyrusCardsUploader.exe
 
   build-macos-intel:
-    runs-on: macos-13  # Intel-based runner
+    runs-on: macos-15-large  # Intel-based runner
     steps:
       - uses: actions/checkout@v4
       
@@ -54,13 +54,13 @@ jobs:
       - name: Zip the .app bundle
         run: |
           cd dist
-          zip -r ImageUploader-macOS-Intel.zip ImageUploader.app
+          zip -r KingCyrusCardsUploader-macOS-Intel.zip KingCyrusCardsUploader.app
       
       - name: Upload macOS Intel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImageUploader-macOS-Intel
-          path: dist/ImageUploader-macOS-Intel.zip
+          name: KingCyrusCardsUploader-macOS-Intel
+          path: dist/KingCyrusCardsUploader-macOS-Intel.zip
 
   build-macos-arm:
     runs-on: macos-latest  # Apple Silicon runner
@@ -83,13 +83,13 @@ jobs:
       - name: Zip the .app bundle
         run: |
           cd dist
-          zip -r ImageUploader-macOS-AppleSilicon.zip ImageUploader.app
+          zip -r KingCyrusCardsUploader-macOS-AppleSilicon.zip KingCyrusCardsUploader.app
       
       - name: Upload macOS Apple Silicon artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImageUploader-macOS-AppleSilicon
-          path: dist/ImageUploader-macOS-AppleSilicon.zip
+          name: KingCyrusCardsUploader-macOS-AppleSilicon
+          path: dist/KingCyrusCardsUploader-macOS-AppleSilicon.zip
 
   create-release:
     needs: [build-windows, build-macos-intel, build-macos-arm]
@@ -100,28 +100,28 @@ jobs:
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: ImageUploader-Windows
+          name: KingCyrusCardsUploader-Windows
           path: artifacts/windows
       
       - name: Download macOS Intel artifact
         uses: actions/download-artifact@v4
         with:
-          name: ImageUploader-macOS-Intel
+          name: KingCyrusCardsUploader-macOS-Intel
           path: artifacts/macos-intel
       
       - name: Download macOS Apple Silicon artifact
         uses: actions/download-artifact@v4
         with:
-          name: ImageUploader-macOS-AppleSilicon
+          name: KingCyrusCardsUploader-macOS-AppleSilicon
           path: artifacts/macos-arm
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/windows/ImageUploader.exe
-            artifacts/macos-intel/ImageUploader-macOS-Intel.zip
-            artifacts/macos-arm/ImageUploader-macOS-AppleSilicon.zip
+            artifacts/windows/KingCyrusCardsUploader.exe
+            artifacts/macos-intel/KingCyrusCardsUploader-macOS-Intel.zip
+            artifacts/macos-arm/KingCyrusCardsUploader-macOS-AppleSilicon.zip
           draft: false
           prerelease: false
           generate_release_notes: true
