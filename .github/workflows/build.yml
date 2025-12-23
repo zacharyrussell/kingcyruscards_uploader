@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -30,8 +33,8 @@ jobs:
           name: ImageUploader-Windows
           path: dist/ImageUploader.exe
 
-  build-macos:
-    runs-on: macos-latest
+  build-macos-intel:
+    runs-on: macos-13  # Intel-based runner
     steps:
       - uses: actions/checkout@v4
       
@@ -45,19 +48,48 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: Build macOS executable
+      - name: Build macOS Intel executable
         run: python build_exe.py
       
       - name: Zip the .app bundle
         run: |
           cd dist
-          zip -r ImageUploader-macOS.zip ImageUploader.app
+          zip -r ImageUploader-macOS-Intel.zip ImageUploader.app
       
-      - name: Upload macOS artifact
+      - name: Upload macOS Intel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImageUploader-macOS
-          path: dist/ImageUploader-macOS.zip
+          name: ImageUploader-macOS-Intel
+          path: dist/ImageUploader-macOS-Intel.zip
+
+  build-macos-arm:
+    runs-on: macos-latest  # Apple Silicon runner
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Build macOS Apple Silicon executable
+        run: python build_exe.py
+      
+      - name: Zip the .app bundle
+        run: |
+          cd dist
+          zip -r ImageUploader-macOS-AppleSilicon.zip ImageUploader.app
+      
+      - name: Upload macOS Apple Silicon artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ImageUploader-macOS-AppleSilicon
+          path: dist/ImageUploader-macOS-AppleSilicon.zip
 
   create-release:
     needs: [build-windows, build-macos]
