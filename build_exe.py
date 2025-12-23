@@ -36,6 +36,7 @@ def build_executable():
     
     import PyInstaller.__main__
     import platform
+    import shutil
     
     # Get the directory where this script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -43,6 +44,19 @@ def build_executable():
     # Determine icon file based on OS
     is_mac = platform.system() == 'Darwin'
     is_windows = platform.system() == 'Windows'
+    
+    # Clean previous builds
+    dist_path = os.path.join(script_dir, 'dist')
+    build_path = os.path.join(script_dir, 'build')
+    
+    if is_mac:
+        # Clean Mac .app bundle and build directories
+        app_path = os.path.join(dist_path, 'ImageUploader.app')
+        if os.path.exists(app_path):
+            print(f"Cleaning previous build: {app_path}")
+            shutil.rmtree(app_path)
+        if os.path.exists(build_path):
+            shutil.rmtree(build_path)
     
     icon_file = 'icon.icns' if is_mac else 'icon.ico'
     icon_path = os.path.join(script_dir, icon_file)
@@ -52,21 +66,40 @@ def build_executable():
     
     # Base arguments
     app_name = 'ImageUploader'
-    args = [
-        'app.py',
-        f'--name={app_name}',
-        '--onefile',
-        '--windowed',  # Remove this line if you want to see console output
-        f'--add-data=templates{separator}templates',
-        '--hidden-import=qr_window',
-        '--hidden-import=update_checker',
-        '--hidden-import=PIL._tkinter_finder',
-        '--collect-all=qrcode',
-        '--collect-all=PIL',
-        f'--distpath={script_dir}/dist',
-        f'--workpath={script_dir}/build',
-        f'--specpath={script_dir}',
-    ]
+    
+    if is_mac:
+        # macOS: use default mode (creates .app bundle directory)
+        args = [
+            'app.py',
+            f'--name={app_name}',
+            '--windowed',
+            f'--add-data=templates{separator}templates',
+            '--hidden-import=qr_window',
+            '--hidden-import=update_checker',
+            '--hidden-import=PIL._tkinter_finder',
+            '--collect-all=qrcode',
+            '--collect-all=PIL',
+            f'--distpath={script_dir}/dist',
+            f'--workpath={script_dir}/build',
+            f'--specpath={script_dir}',
+        ]
+    else:
+        # Windows: onefile works fine
+        args = [
+            'app.py',
+            f'--name={app_name}',
+            '--onefile',
+            '--windowed',
+            f'--add-data=templates{separator}templates',
+            '--hidden-import=qr_window',
+            '--hidden-import=update_checker',
+            '--hidden-import=PIL._tkinter_finder',
+            '--collect-all=qrcode',
+            '--collect-all=PIL',
+            f'--distpath={script_dir}/dist',
+            f'--workpath={script_dir}/build',
+            f'--specpath={script_dir}',
+        ]
     
     # Only add icon if it exists
     if os.path.exists(icon_path):
