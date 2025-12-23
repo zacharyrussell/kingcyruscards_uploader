@@ -30,8 +30,8 @@ jobs:
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImageUploader-Windows
-          path: dist/ImageUploader.exe
+          name: KingCyrusCardsUploader-Windows
+          path: dist/KingCyrusCardsUploader.exe
 
   build-macos-intel:
     runs-on: macos-13  # Intel-based runner
@@ -92,7 +92,7 @@ jobs:
           path: dist/ImageUploader-macOS-AppleSilicon.zip
 
   create-release:
-    needs: [build-windows, build-macos]
+    needs: [build-windows, build-macos-intel, build-macos-arm]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -103,18 +103,25 @@ jobs:
           name: ImageUploader-Windows
           path: artifacts/windows
       
-      - name: Download macOS artifact
+      - name: Download macOS Intel artifact
         uses: actions/download-artifact@v4
         with:
-          name: ImageUploader-macOS
-          path: artifacts/macos
+          name: ImageUploader-macOS-Intel
+          path: artifacts/macos-intel
+      
+      - name: Download macOS Apple Silicon artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ImageUploader-macOS-AppleSilicon
+          path: artifacts/macos-arm
       
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             artifacts/windows/ImageUploader.exe
-            artifacts/macos/ImageUploader-macOS.zip
+            artifacts/macos-intel/ImageUploader-macOS-Intel.zip
+            artifacts/macos-arm/ImageUploader-macOS-AppleSilicon.zip
           draft: false
           prerelease: false
           generate_release_notes: true
