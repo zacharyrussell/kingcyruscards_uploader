@@ -48,19 +48,16 @@ jobs:
       - name: Build macOS executable
         run: python build_exe.py
       
-      - name: Create DMG (optional)
+      - name: Zip the .app bundle
         run: |
-          mkdir -p dist/dmg
-          cp -r dist/ImageUploader.app dist/dmg/
-          hdiutil create -volname "ImageUploader" -srcfolder dist/dmg -ov -format UDZO dist/ImageUploader.dmg
+          cd dist
+          zip -r ImageUploader-macOS.zip ImageUploader.app
       
       - name: Upload macOS artifact
         uses: actions/upload-artifact@v4
         with:
           name: ImageUploader-macOS
-          path: |
-            dist/ImageUploader.app
-            dist/ImageUploader.dmg
+          path: dist/ImageUploader-macOS.zip
 
   create-release:
     needs: [build-windows, build-macos]
@@ -85,7 +82,7 @@ jobs:
         with:
           files: |
             artifacts/windows/ImageUploader.exe
-            artifacts/macos/ImageUploader.dmg
+            artifacts/macos/ImageUploader-macOS.zip
           draft: false
           prerelease: false
           generate_release_notes: true
