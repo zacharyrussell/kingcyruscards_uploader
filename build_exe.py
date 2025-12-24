@@ -51,7 +51,7 @@ def build_executable():
     
     if is_mac:
         # Clean Mac .app bundle and build directories
-        app_path = os.path.join(dist_path, 'ImageUploader.app')
+        app_path = os.path.join(dist_path, 'KingCyrusCardsUploader.app')
         if os.path.exists(app_path):
             print(f"Cleaning previous build: {app_path}")
             shutil.rmtree(app_path)
@@ -65,7 +65,7 @@ def build_executable():
     separator = ';' if is_windows else ':'
     
     # Base arguments
-    app_name = 'ImageUploader'
+    app_name = 'KingCyrusCardsUploader'
     
     if is_mac:
         # macOS: use default mode (creates .app bundle directory)
@@ -79,7 +79,6 @@ def build_executable():
             '--hidden-import=PIL._tkinter_finder',
             '--collect-all=qrcode',
             '--collect-all=PIL',
-            '--osx-bundle-identifier=com.imageuploader.app',
             f'--distpath={script_dir}/dist',
             f'--workpath={script_dir}/build',
             f'--specpath={script_dir}',
@@ -113,7 +112,10 @@ def build_executable():
 
     print("\n" + "="*60)
     print("Build complete!")
-    print(f"Executable location: {script_dir}/dist/ImageUploader.exe")
+    if is_mac:
+        print(f"Executable location: {script_dir}/dist/KingCyrusCardsUploader.app")
+    else:
+        print(f"Executable location: {script_dir}/dist/KingCyrusCardsUploader.exe")
     print("="*60)
 
 if __name__ == '__main__':

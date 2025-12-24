@@ -33,35 +33,6 @@ jobs:
           name: KingCyrusCardsUploader-Windows
           path: dist/KingCyrusCardsUploader.exe
 
-  build-macos-intel:
-    runs-on: macos-15-large  # Intel-based runner
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      
-      - name: Build macOS Intel executable
-        run: python build_exe.py
-      
-      - name: Zip the .app bundle
-        run: |
-          cd dist
-          zip -r KingCyrusCardsUploader-macOS-Intel.zip KingCyrusCardsUploader.app
-      
-      - name: Upload macOS Intel artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: KingCyrusCardsUploader-macOS-Intel
-          path: dist/KingCyrusCardsUploader-macOS-Intel.zip
-
   build-macos-arm:
     runs-on: macos-latest  # Apple Silicon runner
     steps:
