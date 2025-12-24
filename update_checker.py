@@ -5,7 +5,7 @@ import webbrowser
 
 # Your GitHub repo details
 GITHUB_REPO = "https://github.com/zacharyrussell/kingcyruscards_uploader"  # Change this to your repo
-CURRENT_VERSION = "1.0.6"  # Update this with each release
+CURRENT_VERSION = "1.0.7"  # Update this with each release
 
 def check_for_updates():
     """Check GitHub releases for a newer version"""

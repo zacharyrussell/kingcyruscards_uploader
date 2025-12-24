@@ -79,6 +79,7 @@ def build_executable():
             '--hidden-import=PIL._tkinter_finder',
             '--collect-all=qrcode',
             '--collect-all=PIL',
+            '--osx-bundle-identifier=com.imageuploader.app',
             f'--distpath={script_dir}/dist',
             f'--workpath={script_dir}/build',
             f'--specpath={script_dir}',
