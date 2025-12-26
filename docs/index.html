@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>eBay Authorization</title>
+    <title>eBay Authorization - King Cyrus Cards</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,25 +14,37 @@
             padding: 40px;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            max-width: 500px;
+            max-width: 600px;
             margin: 0 auto;
         }
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #0064d2;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
+        .code-box {
+            background: #f8f9fa;
+            border: 2px solid #0064d2;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            max-height: 150px;
+            overflow-y: auto;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        button {
+            background: #0064d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            background: #0052a3;
         }
         .success {
             color: #28a745;
-            font-size: 24px;
+            font-size: 20px;
             margin: 20px 0;
         }
         .error {
@@ -40,50 +52,147 @@
             font-size: 18px;
             margin: 20px 0;
         }
+        .instructions {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-size: 14px;
+            text-align: left;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Connecting to eBay...</h1>
-        <div class="spinner" id="spinner"></div>
-        <p id="message">Please wait while we complete the authorization...</p>
+        <h1>🎉 eBay Authorization Successful!</h1>
+        <div id="content"></div>
     </div>
 
     <script>
         // Parse URL parameters
         const urlParams = new URLSearchParams(window.location.search);
-        const code = urlParams.get('code');
+        const code = urlParams.get('code'); // URLSearchParams automatically decodes
         const isAuthSuccessful = urlParams.get('isAuthSuccessful');
         const error = urlParams.get('error');
 
+        const contentDiv = document.getElementById('content');
+
+        // Debug: log what we received
+        console.log('Code:', code);
+        console.log('isAuthSuccessful:', isAuthSuccessful);
+        console.log('All params:', window.location.search);
+
         if (error) {
-            document.getElementById('spinner').style.display = 'none';
-            document.getElementById('message').innerHTML = '<div class="error">❌ Authorization failed: ' + error + '</div><p>You can close this window and try again.</p>';
-        } else if (!code || !isAuthSuccessful || isAuthSuccessful !== 'true') {
-            document.getElementById('spinner').style.display = 'none';
-            document.getElementById('message').innerHTML = '<div class="error">❌ No authorization code received</div><p>You can close this window and try again.</p>';
+            contentDiv.innerHTML = `
+                <div class="error">❌ Authorization failed: ${error}</div>
+                <p>Please close this window and try again in the app.</p>
+            `;
+        } else if (!code) {
+            contentDiv.innerHTML = `
+                <div class="error">❌ No authorization code received</div>
+                <p>Debug info: ${window.location.search}</p>
+                <p>Please close this window and try again in the app.</p>
+            `;
         } else {
-            // Send code to Flask backend
-            fetch('/ebay/exchange-token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ code: code })
-            })
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('spinner').style.display = 'none';
-                if (data.success) {
-                    document.getElementById('message').innerHTML = '<div class="success">✓ Successfully Connected to eBay!</div><p>You can now close this window and return to the app.</p><p>The app is now authorized to create listings on your behalf.</p>';
-                } else {
-                    document.getElementById('message').innerHTML = '<div class="error">❌ Failed to save token: ' + data.error + '</div><p>Please try again.</p>';
-                }
-            })
-            .catch(error => {
-                document.getElementById('spinner').style.display = 'none';
-                document.getElementById('message').innerHTML = '<div class="error">❌ Error: ' + error + '</div><p>Please try again.</p>';
+            // Show the code and instructions
+            contentDiv.innerHTML = `
+                <div class="success">✓ Authorization Complete!</div>
+                
+                <div class="instructions">
+                    <strong>Your Authorization Code:</strong>
+                    <div class="code-box" id="codeBox">${code}</div>
+                    
+                    <strong>Next Steps:</strong>
+                    <ol>
+                        <li>Click the "Copy Code" button below</li>
+                        <li>Return to the King Cyrus Cards app</li>
+                        <li>The code will be automatically processed</li>
+                    </ol>
+                </div>
+                
+                <button onclick="copyAndRedirect()">📋 Copy Code & Continue</button>
+                <button onclick="copyCode()">📋 Copy Code Only</button>
+                
+                <p style="font-size: 12px; color: #666; margin-top: 20px;">
+                    You can close this window after copying the code.
+                </p>
+            `;
+        }
+
+        function copyCode() {
+            const codeText = document.getElementById('codeBox').innerText;
+            navigator.clipboard.writeText(codeText).then(() => {
+                alert('✓ Code copied to clipboard!');
+            }).catch(err => {
+                alert('Failed to copy. Please select and copy the code manually.');
             });
+        }
+
+        function copyAndRedirect() {
+            const codeText = document.getElementById('codeBox').innerText;
+            navigator.clipboard.writeText(codeText).then(() => {
+                // Try to send to local app
+                fetch('http://localhost:5000/ebay/exchange-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code: codeText })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        contentDiv.innerHTML = `
+                            <div class="success">✓✓ Success! Your app is now connected to eBay!</div>
+                            <p>You can close this window and return to the app.</p>
+                        `;
+                    } else {
+                        contentDiv.innerHTML = `
+                            <div class="error">⚠️ Code copied, but couldn't connect to app</div>
+                            <p>The code is in your clipboard. Please paste it in the app manually.</p>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    // App might not be running or CORS issue - that's ok, code is copied
+                    contentDiv.innerHTML = `
+                        <div class="success">✓ Code copied to clipboard!</div>
+                        <p>Return to the app - it will detect the code automatically.</p>
+                        <p style="font-size: 12px; color: #666;">If it doesn't work automatically, paste the code when prompted.</p>
+                    `;
+                });
+            });
+        }
+
+        // Automatically try to send to app after 1 second
+        if (code) {
+            setTimeout(() => {
+                fetch('http://localhost:5000/ebay/exchange-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ code: code })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        contentDiv.innerHTML = `
+                            <div class="success" style="font-size: 24px;">✓✓✓ Automatically Connected!</div>
+                            <p style="font-size: 18px;">Your app is now authorized to create eBay listings!</p>
+                            <p>You can close this window and return to the app.</p>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    // Silently fail - user can still copy manually
+                    console.log('Could not auto-connect to app:', error);
+                });
+            }, 1000);
         }
     </script>
 </body>
