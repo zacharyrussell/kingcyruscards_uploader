@@ -1,0 +1,9 @@
+{
+    "app_id": "ZachRuss-kcctesti-SBX-8e8d9c741-9af16bc4",
+    "dev_id": "2fcdd53f-6071-44d0-92d0-8246f02101d0", 
+    "cert_id": "SBX-e8d9c741017e-914d-417c-9141-1f0d",
+    "environment": "sandbox",
+    "user_token": "v^1.1...",
+    "refresh_token": "v^1.1...",
+    "oauth_state": "..."
+}

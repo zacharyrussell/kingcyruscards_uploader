@@ -1,6 +1,9 @@
 import requests
 import base64
-from ebay_config import load_config
+import secrets
+import webbrowser
+from urllib.parse import urlencode
+from ebay_config import load_config, save_config
 
 class eBayUploader:
     def __init__(self):
@@ -8,19 +11,55 @@ class eBayUploader:
         self.sandbox_url = "https://api.sandbox.ebay.com"
         self.production_url = "https://api.ebay.com"
         self.base_url = self.sandbox_url if self.config.get("environment") == "sandbox" else self.production_url
-        self.token = None
+        
+        # OAuth URLs
+        self.sandbox_auth_url = "https://auth.sandbox.ebay.com/oauth2/authorize"
+        self.production_auth_url = "https://auth.ebay.com/oauth2/authorize"
+        self.auth_url = self.sandbox_auth_url if self.config.get("environment") == "sandbox" else self.production_auth_url
+        
+        self.token = self.config.get("user_token")
+        self.refresh_token = self.config.get("refresh_token")
     
-    def get_oauth_token(self):
-        """Get OAuth token for API access"""
+    def get_auth_url(self, redirect_uri="Zach_Russell-ZachRuss-kcctes-xcritru"):
+        """Generate eBay authorization URL for user login"""
+        if not self.config.get("app_id"):
+            raise Exception("eBay App ID not configured")
+        
+        # Generate state for CSRF protection
+        state = secrets.token_urlsafe(32)
+        
+        scope_base = (
+        "https://api.sandbox.ebay.com"
+        if self.config.get("environment") == "sandbox"
+        else "https://api.ebay.com"
+        )
+
+        params = {
+            "client_id": self.config["app_id"],
+            "response_type": "code",
+            "redirect_uri": redirect_uri,
+            "scope": f"{scope_base}/oauth/api_scope {scope_base}/oauth/api_scope/sell.inventory {scope_base}/oauth/api_scope/sell.account",
+            "state": state
+        }
+
+        # Save state to config for verification
+        config = self.config.copy()
+        config["oauth_state"] = state
+        save_config(config)
+        
+        return f"{self.auth_url}?{urlencode(params)}"
+    
+    def exchange_code_for_token(self, code, redirect_uri="Zach_Russell-ZachRuss-kcctes-xcritru"):
+        """Exchange authorization code for access token"""
         if not all([self.config.get("app_id"), self.config.get("cert_id")]):
             raise Exception("eBay credentials not configured")
         
         is_sandbox = self.config.get("environment") == "sandbox"
-        
-        if is_sandbox:
-            url = "https://api.sandbox.ebay.com/identity/v1/oauth2/token"
-        else:
-            url = "https://api.ebay.com/identity/v1/oauth2/token"
+        url = (
+        "https://api.sandbox.ebay.com/identity/v1/oauth2/token"
+        if is_sandbox
+        else "https://api.ebay.com/identity/v1/oauth2/token"
+        )
         
         # Create base64 encoded credentials
         credentials = f"{self.config['app_id']}:{self.config['cert_id']}"
@@ -31,28 +70,87 @@ class eBayUploader:
             "Authorization": f"Basic {encoded_credentials}"
         }
         
-        # Simplified scope that works for both sandbox and production
         data = {
-            "grant_type": "client_credentials",
-            "scope": "https://api.ebay.com/oauth/api_scope/sell.inventory"
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": redirect_uri
         }
         
         try:
-            print(f"Requesting OAuth token from: {url}")  # Debug
+            print(f"Exchanging code for token...")
             response = requests.post(url, headers=headers, data=data)
-            print(f"OAuth response status: {response.status_code}")  # Debug
-            print(f"OAuth response: {response.text}")  # Debug
-            response.raise_for_status()
-            self.token = response.json().get("access_token")
-            print(f"Got token: {self.token[:20]}...")  # Debug (show first 20 chars)
-            return self.token
+            print(f"Token exchange status: {response.status_code}")
+            
+            if response.status_code != 200:
+                print(f"Token exchange error: {response.text}")
+                raise Exception(f"Token exchange failed: {response.text}")
+            
+            token_data = response.json()
+            
+            # Save tokens to config
+            config = self.config.copy()
+            config["user_token"] = token_data.get("access_token")
+            config["refresh_token"] = token_data.get("refresh_token")
+            config["token_expires_in"] = token_data.get("expires_in")
+            save_config(config)
+            
+            self.token = token_data.get("access_token")
+            self.refresh_token = token_data.get("refresh_token")
+            
+            print("Token obtained successfully!")
+            return True
         except Exception as e:
-            raise Exception(f"Failed to get OAuth token: {str(e)}\nResponse: {response.text if 'response' in locals() else 'no response'}")
+            print(f"Error exchanging code: {str(e)}")
+            raise Exception(f"Failed to exchange code for token: {str(e)}")
+    
+    def refresh_access_token(self):
+        """Refresh the access token using refresh token"""
+        if not self.refresh_token:
+            raise Exception("No refresh token available")
+        
+        is_sandbox = self.config.get("environment") == "sandbox"
+        url = (
+            "https://api.sandbox.ebay.com/identity/v1/oauth2/token"
+            if is_sandbox
+            else "https://api.ebay.com/identity/v1/oauth2/token"
+        )
+        credentials = f"{self.config['app_id']}:{self.config['cert_id']}"
+        encoded_credentials = base64.b64encode(credentials.encode()).decode()
+        
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Authorization": f"Basic {encoded_credentials}"
+        }
+        
+        scope_base = (
+            "https://api.sandbox.ebay.com"
+            if self.config.get("environment") == "sandbox"
+            else "https://api.ebay.com"
+        )
+
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": self.refresh_token,
+            "scope": f"{scope_base}/oauth/api_scope/sell.inventory {scope_base}/oauth/api_scope/sell.account {scope_base}/oauth/api_scope"
+        }
+        
+        try:
+            response = requests.post(url, headers=headers, data=data)
+            if response.status_code == 200:
+                token_data = response.json()
+                config = self.config.copy()
+                config["user_token"] = token_data.get("access_token")
+                save_config(config)
+                self.token = token_data.get("access_token")
+                return True
+        except:
+            pass
+        
+        return False
+    
     
     def upload_image(self, image_path):
         """Upload image to eBay Picture Services (EPS)"""
-        if not self.token:
-            self.get_oauth_token()
         
         # Note: eBay's Image API is part of their Trading API
         # This is a simplified version - production may need the Trading API
@@ -83,8 +181,6 @@ class eBayUploader:
         - image_urls: list of str
         - condition: str (e.g., "NEW", "USED")
         """
-        if not self.token:
-            self.get_oauth_token()
         
         url = f"{self.base_url}/sell/inventory/v1/inventory_item"
         

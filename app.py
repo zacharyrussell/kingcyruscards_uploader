@@ -100,6 +100,7 @@ def ebay_config():
         # Don't send sensitive data to client, just check if configured
         return jsonify({
             'configured': is_configured(),
+            'authenticated': bool(config.get('user_token')),
             'environment': config.get('environment', 'sandbox')
         })
     
@@ -116,6 +117,40 @@ def ebay_config():
             return jsonify({'success': True})
         else:
             return jsonify({'success': False, 'error': 'Failed to save config'}), 500
+
+@app.route('/ebay/login')
+def ebay_login():
+    """Initiate eBay OAuth login"""
+    try:
+        uploader = eBayUploader()
+        auth_url = uploader.get_auth_url()
+        return jsonify({'success': True, 'auth_url': auth_url})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/ebay/callback')
+def ebay_callback():
+    """Serve the redirect page that will parse the code"""
+    return render_template('ebay_redirect.html')
+
+@app.route('/ebay/exchange-token', methods=['POST'])
+def exchange_token():
+    """Exchange the authorization code for a token"""
+    try:
+        data = request.json
+        code = data.get('code')
+        
+        if not code:
+            return jsonify({'success': False, 'error': 'No code provided'}), 400
+        
+        uploader = eBayUploader()
+        uploader.exchange_code_for_token(code)
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        import traceback
+        print(f"Token exchange error: {traceback.format_exc()}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/ebay/create-listing', methods=['POST'])
 def create_ebay_listing():
