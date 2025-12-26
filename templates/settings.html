@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - King Cyrus Cards Uploader</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 32px;
+            font-size: 14px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 24px;
+            color: #0064d2;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .section {
+            margin-bottom: 32px;
+            padding-bottom: 32px;
+            border-bottom: 2px solid #eee;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 20px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 14px;
+            color: #333;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .info-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        .info-text a {
+            color: #0064d2;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+        .status-configured {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-not-configured {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .btn {
+            padding: 12px 24px;
+            background: #0064d2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: #0052a3;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        .help-box {
+            background: #e7f3ff;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        .help-box h3 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #0064d2;
+        }
+        .help-box p {
+            font-size: 13px;
+            color: #333;
+            line-height: 1.6;
+        }
+        .help-box ul {
+            margin-left: 20px;
+            margin-top: 8px;
+        }
+        .help-box li {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Uploader</a>
+        
+        <h1>⚙️ Settings</h1>
+        <p class="subtitle">Configure your eBay API credentials and listing defaults</p>
+        
+        <div class="status" id="status"></div>
+        
+        <!-- eBay Configuration Section -->
+        <div class="section">
+            <h2>eBay API Configuration</h2>
+            <div id="ebayStatus"></div>
+            
+            <div class="help-box">
+                <h3>📚 How to get your API keys:</h3>
+                <p>1. Go to <a href="https://developer.ebay.com/my/keys" target="_blank">eBay Developer Portal</a></p>
+                <p>2. Sign in with your eBay seller account</p>
+                <p>3. Create an application to get your keys</p>
+                <p>4. Copy the keys and paste them below</p>
+                <p><a href="EBAY_SETUP.md" target="_blank">View detailed setup guide</a></p>
+            </div>
+            
+            <div class="form-group">
+                <label>App ID (Client ID)</label>
+                <input type="text" id="appId" placeholder="YourName-YourApp-PRD-...">
+                <p class="info-text">Found in your eBay Developer account under "Application Keys"</p>
+            </div>
+            
+            <div class="form-group">
+                <label>Dev ID</label>
+                <input type="text" id="devId" placeholder="Your Developer ID">
+            </div>
+            
+            <div class="form-group">
+                <label>Cert ID (Client Secret)</label>
+                <input type="password" id="certId" placeholder="PRD-... or SBX-...">
+                <p class="info-text">Keep this secret! Don't share with anyone</p>
+            </div>
+            
+            <div class="form-group">
+                <label>Environment</label>
+                <select id="environment">
+                    <option value="sandbox">Sandbox (Testing - recommended first)</option>
+                    <option value="production">Production (Live listings)</option>
+                </select>
+                <p class="info-text">Use Sandbox for testing, Production for real listings</p>
+            </div>
+            
+            <button class="btn" onclick="saveEbayConfig()">💾 Save eBay Configuration</button>
+        </div>
+        
+        <!-- Listing Defaults Section -->
+        <div class="section">
+            <h2>Listing Defaults</h2>
+            <p class="info-text" style="margin-bottom: 16px;">Set default values to speed up creating listings</p>
+            
+            <div class="form-group">
+                <label>Default Category ID</label>
+                <input type="text" id="defaultCategoryId" placeholder="e.g., 261328">
+                <p class="info-text">Common: Sports Cards (261328), Pokémon (183454), MTG (38292)</p>
+            </div>
+            
+            <div class="form-group">
+                <label>Default Condition</label>
+                <select id="defaultCondition">
+                    <option value="NEW">New</option>
+                    <option value="LIKE_NEW">Like New</option>
+                    <option value="USED_EXCELLENT">Used - Excellent</option>
+                    <option value="USED_GOOD">Used - Good</option>
+                    <option value="USED_ACCEPTABLE">Used - Acceptable</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Default Quantity</label>
+                <input type="number" id="defaultQuantity" value="1" min="1">
+            </div>
+            
+            <button class="btn btn-secondary" onclick="saveDefaults()">💾 Save Defaults</button>
+        </div>
+        
+        <!-- About Section -->
+        <div class="section">
+            <h2>About</h2>
+            <p style="font-size: 14px; color: #666; line-height: 1.6;">
+                <strong>King Cyrus Cards Uploader</strong><br>
+                Version 1.0<br><br>
+                Upload images from your phone and create eBay listings quickly and easily.<br><br>
+                Your credentials are stored locally and never leave your computer.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 3000);
+        }
+
+        async function loadEbayConfig() {
+            try {
+                const response = await fetch('/ebay/config');
+                const data = await response.json();
+                
+                const statusDiv = document.getElementById('ebayStatus');
+                if (data.configured) {
+                    statusDiv.innerHTML = '<span class="status-badge status-configured">✓ eBay Configured</span>';
+                    document.getElementById('environment').value = data.environment;
+                } else {
+                    statusDiv.innerHTML = '<span class="status-badge status-not-configured">✗ Not Configured</span>';
+                }
+            } catch (error) {
+                console.error('Error loading eBay config:', error);
+            }
+        }
+
+        async function saveEbayConfig() {
+            const config = {
+                app_id: document.getElementById('appId').value,
+                dev_id: document.getElementById('devId').value,
+                cert_id: document.getElementById('certId').value,
+                environment: document.getElementById('environment').value
+            };
+            
+            if (!config.app_id || !config.dev_id || !config.cert_id) {
+                showStatus('Please fill in all eBay API fields', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/ebay/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(config)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showStatus('eBay configuration saved successfully!', 'success');
+                    loadEbayConfig();
+                    // Clear sensitive fields
+                    document.getElementById('appId').value = '';
+                    document.getElementById('devId').value = '';
+                    document.getElementById('certId').value = '';
+                } else {
+                    showStatus('Failed to save configuration', 'error');
+                }
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        async function loadDefaults() {
+            try {
+                const response = await fetch('/settings/defaults');
+                const data = await response.json();
+                
+                if (data.category_id) document.getElementById('defaultCategoryId').value = data.category_id;
+                if (data.condition) document.getElementById('defaultCondition').value = data.condition;
+                if (data.quantity) document.getElementById('defaultQuantity').value = data.quantity;
+            } catch (error) {
+                console.error('Error loading defaults:', error);
+            }
+        }
+
+        async function saveDefaults() {
+            const defaults = {
+                category_id: document.getElementById('defaultCategoryId').value,
+                condition: document.getElementById('defaultCondition').value,
+                quantity: document.getElementById('defaultQuantity').value
+            };
+            
+            try {
+                const response = await fetch('/settings/defaults', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(defaults)
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    showStatus('Defaults saved successfully!', 'success');
+                } else {
+                    showStatus('Failed to save defaults', 'error');
+                }
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+            }
+        }
+
+        // Load config on page load
+        loadEbayConfig();
+        loadDefaults();
+    </script>
+</body>
+</html>

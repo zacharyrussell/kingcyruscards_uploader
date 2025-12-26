@@ -7,28 +7,12 @@ import threading
 import time
 from qr_window import show_qr_code
 from update_checker import check_for_updates, prompt_update
-import qrcode
-
-import os, sys
-
-if hasattr(sys, "_MEIPASS"):
-    os.chdir(sys._MEIPASS)
-else:
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-
+from ebay_config import load_config, save_config, is_configured, load_defaults, save_defaults
+from ebay_uploader import eBayUploader
 app = Flask(__name__)
 
 # Configuration
-BASE_DIR = os.getcwd()
-from pathlib import Path
-
-UPLOAD_FOLDER = Path.home() / "Desktop" / "ImageUploaderUploads"
-UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
-
-app.config['UPLOAD_FOLDER'] = str(UPLOAD_FOLDER)
-
-
+UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'heic', 'heif'}
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size
 
@@ -50,13 +34,16 @@ def get_local_ip():
     except Exception:
         return "127.0.0.1"
 
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/settings')
+def settings():
+    return render_template('settings.html')
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -106,6 +93,79 @@ def delete_file(filename):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/ebay/config', methods=['GET', 'POST'])
+def ebay_config():
+    if request.method == 'GET':
+        config = load_config()
+        # Don't send sensitive data to client, just check if configured
+        return jsonify({
+            'configured': is_configured(),
+            'environment': config.get('environment', 'sandbox')
+        })
+    
+    elif request.method == 'POST':
+        data = request.json
+        config = {
+            'app_id': data.get('app_id'),
+            'dev_id': data.get('dev_id'),
+            'cert_id': data.get('cert_id'),
+            'environment': data.get('environment', 'sandbox')
+        }
+        
+        if save_config(config):
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to save config'}), 500
+
+@app.route('/ebay/create-listing', methods=['POST'])
+def create_ebay_listing():
+    if not is_configured():
+        return jsonify({'success': False, 'error': 'eBay not configured'}), 400
+    
+    try:
+        data = request.json
+        print(f"Received listing data: {data}")  # Debug log
+        
+        # Get image URLs (convert local paths to URLs)
+        image_filenames = data.get('images', [])
+        image_urls = [f"http://{get_local_ip()}:5000/uploads/{img}" for img in image_filenames]
+        
+        listing_data = {
+            'title': data.get('title'),
+            'description': data.get('description'),
+            'price': float(data.get('price')),
+            'quantity': int(data.get('quantity', 1)),
+            'category_id': data.get('category_id'),
+            'condition': data.get('condition', 'NEW'),
+            'image_urls': image_urls
+        }
+        
+        print(f"Creating listing with data: {listing_data}")  # Debug log
+        
+        uploader = eBayUploader()
+        result = uploader.create_listing(listing_data)
+        
+        print(f"Listing created successfully: {result}")  # Debug log
+        return jsonify({'success': True, 'result': result})
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error creating listing:\n{error_trace}")  # Full error log
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/settings/defaults', methods=['GET', 'POST'])
+def settings_defaults():
+    if request.method == 'GET':
+        defaults = load_defaults()
+        return jsonify(defaults)
+    
+    elif request.method == 'POST':
+        data = request.json
+        if save_defaults(data):
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Failed to save defaults'}), 500
+
 def run_flask():
     """Run Flask server in background thread"""
     app.run(debug=False, host='0.0.0.0', port=5000, use_reloader=False)
@@ -131,4 +191,9 @@ if __name__ == '__main__':
     # Run Flask in a background thread
     flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
-    show_qr_code(url)  # start GUI immediately
+    
+    # Give Flask a moment to start
+    time.sleep(1)
+    
+    # Show QR code window on main thread
+    show_qr_code(url)
